@@ -83,54 +83,46 @@ export class CdsActionReplyUrlPreviewComponent implements OnInit, OnDestroy, OnC
 
   private detectAndRestore(): void {
     const r = this.response as any;
-    if (r?.message && r.type === 'url_preview') {
+    if (r?.type === 'url_preview') {
       this.activeTab = r.activeMode || 'text';
-      if (typeof r.message.text === 'string') {
-        this.rawText = r.message.text;
-      }
-      if (Array.isArray(r.message.form?.sources) && r.message.form.sources.length > 0) {
-        this.urlFormItems = r.message.form.sources.map(i => ({
+      this.rawText = typeof r.list === 'string' ? r.list : '';
+      this.jsonSourcesValue = typeof r.text === 'string' ? r.text : '';
+      if (Array.isArray(r.form?.sources) && r.form.sources.length > 0) {
+        this.urlFormItems = r.form.sources.map(i => ({
           source_name: i.source_name || '',
           source_file_name: i.source_file_name || '',
           source_description: i.source_description || '',
           source_image: i.source_image || ''
         }));
       }
-      if (typeof r.message.json === 'string') {
-        this.jsonSourcesValue = r.message.json;
-      }
       return;
     }
     this.activeTab = 'text';
-    this.rawText = this.response?.text || '';
+    this.rawText = '';
   }
 
   private saveAll(): void {
     const r = this.response as any;
     r.activeMode = this.activeTab;
-    r.message = {
-      text: this.rawText,
-      form: { sources: this.urlFormItems },
-      json: this.jsonSourcesValue
-    };
-    this.response.text = '';
+    r.text = this.jsonSourcesValue;
+    r.list = this.rawText;
+    r.form = { sources: this.urlFormItems };
   }
 
   get previewText(): string {
     const r = this.response as any;
-    const msg = r?.message;
-    if (!msg) { return this.response?.text || ''; }
+    if (r?.type !== 'url_preview') { return r?.text || ''; }
     const mode = r.activeMode || 'text';
     if (mode === 'text') {
-      return typeof msg.text === 'string' ? msg.text : '';
+      return typeof r.list === 'string' ? r.list : '';
     }
     if (mode === 'form') {
-      return Array.isArray(msg.form?.sources)
-        ? msg.form.sources.map(i => i.source_name).filter(u => !!u).join('\n')
+      return Array.isArray(r.form?.sources)
+        ? r.form.sources.map(i => i.source_name).filter(u => !!u).join('\n')
         : '';
     }
     if (mode === 'json_sources') {
-      return typeof msg.json === 'string' ? msg.json : '';
+      return typeof r.text === 'string' ? r.text : '';
     }
     return '';
   }

@@ -33,9 +33,9 @@
 
 <div *ngIf="previewMode" class="text-editor-wrapper previewMode">
     <div class="response-wrp preview-url-title">
-        <ng-container *ngIf="previewActiveMode === 'text'">{{ 'UrlPreviewTitleText' | translate }}</ng-container>
+        <ng-container *ngIf="previewActiveMode === 'list'">{{ 'UrlPreviewTitleText' | translate }}</ng-container>
         <ng-container *ngIf="previewActiveMode === 'form'">{{ 'UrlPreviewTitleForm' | translate }}</ng-container>
-        <ng-container *ngIf="previewActiveMode === 'json_sources'">{{ 'UrlPreviewTitleJson' | translate }}</ng-container>
+        <ng-container *ngIf="previewActiveMode === 'text'">{{ 'UrlPreviewTitleJson' | translate }}</ng-container>
     </div>
     <div class="response-wrp" *ngIf="previewText">{{ previewText }}</div>
     <div class="response-wrp no-text" *ngIf="!previewText">{{'CDSCanvas.ClickToAddText' | translate }}</div>
@@ -46,10 +46,10 @@
     <!-- Mode selector -->
     <div class="url-mode-row">
         <div class="url-mode-selector">
-            <label class="url-mode-tab" [class.active]="activeTab === 'text'">
+            <label class="url-mode-tab" [class.active]="activeTab === 'list'">
                 <input type="radio" class="url-mode-check" name="urlPreviewMode"
-                    [checked]="activeTab === 'text'"
-                    (change)="setTab('text')" />
+                    [checked]="activeTab === 'list'"
+                    (change)="setTab('list')" />
                 {{ 'UrlPreviewTabText' | translate }}
             </label>
             <label class="url-mode-tab" [class.active]="activeTab === 'form'">
@@ -58,10 +58,10 @@
                     (change)="setTab('form')" />
                 {{ 'UrlPreviewTabForm' | translate }}
             </label>
-            <label class="url-mode-tab" [class.active]="activeTab === 'json_sources'">
+            <label class="url-mode-tab" [class.active]="activeTab === 'text'">
                 <input type="radio" class="url-mode-check" name="urlPreviewMode"
-                    [checked]="activeTab === 'json_sources'"
-                    (change)="setTab('json_sources')" />
+                    [checked]="activeTab === 'text'"
+                    (change)="setTab('text')" />
                 {{ 'UrlPreviewTabJsonSources' | translate }}
             </label>
         </div>
@@ -71,14 +71,14 @@
     <div class="url-mode-hint">
         <span class="material-icons url-mode-hint__icon">info_outline</span>
         <span class="url-mode-hint__text">
-            <ng-container *ngIf="activeTab === 'text'">{{ 'UrlPreviewHint' | translate }}</ng-container>
+            <ng-container *ngIf="activeTab === 'list'">{{ 'UrlPreviewHint' | translate }}</ng-container>
             <ng-container *ngIf="activeTab === 'form'">{{ 'UrlPreviewHintForm' | translate }}</ng-container>
-            <ng-container *ngIf="activeTab === 'json_sources'">{{ 'UrlPreviewHintJsonSources' | translate }}</ng-container>
+            <ng-container *ngIf="activeTab === 'text'">{{ 'UrlPreviewHintJsonSources' | translate }}</ng-container>
         </span>
     </div>
 
-    <!-- Mode: Text -->
-    <div *ngIf="activeTab === 'text'">
+    <!-- Mode: List (free text) -->
+    <div *ngIf="activeTab === 'list'">
         <cds-textarea
             class="text-editable-div"
             [activeFocus]="activeFocus"
@@ -133,12 +133,39 @@
                     [(ngModel)]="item.source_description" />
             </div>
             <div class="url-form__field">
-                <label class="url-form__label">{{ 'UrlPreviewFormImage' | translate }}</label>
-                <input
-                    class="url-form__input"
-                    type="url"
-                    [placeholder]="'UrlPreviewFormImagePlaceholder' | translate"
-                    [(ngModel)]="item.source_image" />
+                <div class="url-form__image-header">
+                    <label class="url-form__label">{{ 'UrlPreviewFormImage' | translate }}</label>
+                    <div class="url-form__image-toggle">
+                        <button type="button"
+                            [class.active]="item._imageMode !== 'upload'"
+                            (click)="setImageMode(i, 'url')">Link</button>
+                        <button type="button"
+                            [class.active]="item._imageMode === 'upload'"
+                            (click)="setImageMode(i, 'upload')">Upload</button>
+                    </div>
+                </div>
+                <ng-container *ngIf="item._imageMode !== 'upload'">
+                    <input
+                        class="url-form__input"
+                        type="url"
+                        [placeholder]="'UrlPreviewFormImagePlaceholder' | translate"
+                        [(ngModel)]="item.source_image" />
+                </ng-container>
+                <ng-container *ngIf="item._imageMode === 'upload'">
+                    <label class="url-form__upload-area">
+                        <input type="file" accept="image/*" hidden (change)="onImageFileChange($event, i)" />
+                        <ng-container *ngIf="!item.source_image">
+                            <em class="material-icons">add_photo_alternate</em>
+                            <span>{{ 'UrlPreviewFormImageUpload' | translate }}</span>
+                        </ng-container>
+                        <ng-container *ngIf="item.source_image">
+                            <img [src]="item.source_image" class="url-form__upload-thumb" alt="" />
+                            <span class="url-form__upload-remove" (click)="$event.preventDefault(); item.source_image = ''">
+                                <em class="material-icons">close</em>
+                            </span>
+                        </ng-container>
+                    </label>
+                </ng-container>
             </div>
         </div>
         <button type="button" class="url-form__add-btn" (click)="addFormItem()">
@@ -147,8 +174,8 @@
         </button>
     </div>
 
-    <!-- Mode: JSON Sources -->
-    <div *ngIf="activeTab === 'json_sources'" class="url-json-sources">
+    <!-- Mode: Text (json parameter) -->
+    <div *ngIf="activeTab === 'text'" class="url-json-sources">
         <cds-textarea
             id="jsonSources"
             [textLimitBtn]="false"

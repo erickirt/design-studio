@@ -51,6 +51,7 @@
     "UrlPreviewFormTitlePlaceholder": "Page title",
     "UrlPreviewFormDescriptionPlaceholder": "Page description",
     "UrlPreviewFormImagePlaceholder": "https://image-url...",
+    "UrlPreviewFormImageUpload": "Click to upload an image",
     "UrlPreviewJsonSourcesHint": "Select or type a variable containing the list of URL previews",
     "SendUsEmail": "Send us an email",
     "ChatUs": "Chat with us",

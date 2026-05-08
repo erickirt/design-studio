@@ -6,6 +6,9 @@ import { TEXT_CHARS_LIMIT } from '../../../../../../../utils';
 import { LoggerService } from 'src/chat21-core/providers/abstract/logger.service';
 import { LoggerInstance } from 'src/chat21-core/providers/logger/loggerInstance';
 
+// activeTab values match the JSON keys: 'list' = free text, 'form' = form, 'text' = json parameter
+type UrlPreviewTab = 'list' | 'form' | 'text';
+
 @Component({
   selector: 'cds-action-reply-url-preview',
   templateUrl: './cds-action-reply-url-preview.component.html',
@@ -33,17 +36,18 @@ export class CdsActionReplyUrlPreviewComponent implements OnInit, OnDestroy, OnC
   booleanOperators = [{ type: 'AND', operator: 'AND' }, { type: 'OR', operator: 'OR' }];
   activeFocus: boolean = true;
 
-  activeTab: 'text' | 'form' | 'json_sources' = 'text';
+  // 'list' = free text links, 'form' = form array, 'text' = json parameter
+  activeTab: UrlPreviewTab = 'list';
 
-  // Text mode — saved as-is, no URL extraction
+  // 'list' tab: free text
   rawText: string = '';
 
-  // Form mode
-  urlFormItems: Array<{ source_name: string; source_file_name: string; source_description: string; source_image: string }> = [
-    { source_name: '', source_file_name: '', source_description: '', source_image: '' }
+  // 'form' tab
+  urlFormItems: Array<{ source_name: string; source_file_name: string; source_description: string; source_image: string; _imageMode?: 'url' | 'upload' }> = [
+    { source_name: '', source_file_name: '', source_description: '', source_image: '', _imageMode: 'url' }
   ];
 
-  // JSON Sources mode
+  // 'text' tab: json parameter value
   jsonSourcesValue: string = '';
 
   private readonly logger: LoggerService = LoggerInstance.getInstance();
@@ -84,7 +88,7 @@ export class CdsActionReplyUrlPreviewComponent implements OnInit, OnDestroy, OnC
   private detectAndRestore(): void {
     const r = this.response as any;
     if (r?.type === 'url_preview') {
-      this.activeTab = r.activeMode || 'text';
+      this.activeTab = (r.activeMode as UrlPreviewTab) || 'list';
       this.rawText = typeof r.list === 'string' ? r.list : '';
       this.jsonSourcesValue = typeof r.text === 'string' ? r.text : '';
       if (Array.isArray(r.form?.sources) && r.form.sources.length > 0) {
@@ -92,12 +96,13 @@ export class CdsActionReplyUrlPreviewComponent implements OnInit, OnDestroy, OnC
           source_name: i.source_name || '',
           source_file_name: i.source_file_name || '',
           source_description: i.source_description || '',
-          source_image: i.source_image || ''
+          source_image: i.source_image || '',
+          _imageMode: i.source_image?.startsWith('data:') ? 'upload' : 'url'
         }));
       }
       return;
     }
-    this.activeTab = 'text';
+    this.activeTab = 'list';
     this.rawText = '';
   }
 
@@ -111,9 +116,9 @@ export class CdsActionReplyUrlPreviewComponent implements OnInit, OnDestroy, OnC
 
   get previewText(): string {
     const r = this.response as any;
-    if (r?.type !== 'url_preview') { return r?.text || ''; }
-    const mode = r.activeMode || 'text';
-    if (mode === 'text') {
+    if (r?.type !== 'url_preview') { return r?.list || r?.text || ''; }
+    const mode: UrlPreviewTab = r.activeMode || 'list';
+    if (mode === 'list') {
       return typeof r.list === 'string' ? r.list : '';
     }
     if (mode === 'form') {
@@ -121,17 +126,17 @@ export class CdsActionReplyUrlPreviewComponent implements OnInit, OnDestroy, OnC
         ? r.form.sources.map(i => i.source_name).filter(u => !!u).join('\n')
         : '';
     }
-    if (mode === 'json_sources') {
+    if (mode === 'text') {
       return typeof r.text === 'string' ? r.text : '';
     }
     return '';
   }
 
-  get previewActiveMode(): string {
-    return (this.response as any)?.activeMode || this.activeTab;
+  get previewActiveMode(): UrlPreviewTab {
+    return ((this.response as any)?.activeMode as UrlPreviewTab) || this.activeTab;
   }
 
-  setTab(tab: 'text' | 'form' | 'json_sources'): void {
+  setTab(tab: UrlPreviewTab): void {
     if (tab === this.activeTab) { return; }
     this.activeTab = tab;
     this.saveAll();
@@ -148,7 +153,23 @@ export class CdsActionReplyUrlPreviewComponent implements OnInit, OnDestroy, OnC
   }
 
   addFormItem(): void {
-    this.urlFormItems.push({ source_name: '', source_file_name: '', source_description: '', source_image: '' });
+    this.urlFormItems.push({ source_name: '', source_file_name: '', source_description: '', source_image: '', _imageMode: 'url' });
+  }
+
+  onImageFileChange(event: Event, index: number): void {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) { return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.urlFormItems[index].source_image = reader.result as string;
+      this.urlFormItems[index]._imageMode = 'upload';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  setImageMode(index: number, mode: 'url' | 'upload'): void {
+    this.urlFormItems[index]._imageMode = mode;
+    this.urlFormItems[index].source_image = '';
   }
 
   removeFormItem(index: number): void {
@@ -160,7 +181,6 @@ export class CdsActionReplyUrlPreviewComponent implements OnInit, OnDestroy, OnC
   onJsonSourcesChange(value: string): void {
     let jsonValue = '';
     if (value) {
-      // strip existing {{ }} and | json if present, then rewrap
       const inner = value.replace(/^\{\{|\}\}$/g, '').replace(/\s*\|\s*json\s*$/, '').trim();
       jsonValue = `{{${inner} | json}}`;
     }
@@ -206,7 +226,7 @@ export class CdsActionReplyUrlPreviewComponent implements OnInit, OnDestroy, OnC
 
   onBlur(event) {
     this.logger.log('[ACTION REPLY URL_PREVIEW] onBlur', event.target.value);
-    if (this.activeTab === 'text') {
+    if (this.activeTab === 'list') {
       this.saveAll();
     }
     this.changeActionReply.emit();

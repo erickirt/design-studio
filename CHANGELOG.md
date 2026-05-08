@@ -7,6 +7,9 @@
 ### **Copyrigth**: 
 *Tiledesk SRL*
 
+# 1.39.42
+- **changed**: updated ai_models
+
 # 1.39.41
 - **bug fix**: fixed an error in the "Add to Knowledge Base" action: information was not saved.
 

@@ -7,6 +7,10 @@
 ### **Copyrigth**: 
 *Tiledesk SRL*
 
+# this branch 
+- **added**: Added "use cache" and "use_hyde" to the ask KB keys: use_hyde and use_cache
+- **added**: Added Custom Headers In MCP Server section
+
 # 1.39.40
 - **added**: added PINECONE_RERANKING in environment to set reranking
 

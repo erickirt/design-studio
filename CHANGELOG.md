@@ -11,6 +11,12 @@
 - **added**: Added "use cache" and "use_hyde" to the ask KB keys: use_hyde and use_cache
 - **added**: Added Custom Headers In MCP Server section
 
+# 1.39.42
+- **changed**: updated ai_models
+
+# 1.39.41
+- **bug fix**: fixed an error in the "Add to Knowledge Base" action: information was not saved.
+
 # 1.39.40
 - **added**: added PINECONE_RERANKING in environment to set reranking
 
